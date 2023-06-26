@@ -9,12 +9,12 @@ import (
 )
 
 func Client() {
-	server, _ := net.Dial("tcp", ":8080")
-	var wg sync.WaitGroup
-	wg.Add(2)
 	fmt.Print("请输入昵称：")
 	var username string
 	fmt.Scanln(&username)
+	server, _ := net.Dial("tcp", ":8080")
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go receiveMessage(server)
 	go sendMessage(server, username)
 	wg.Wait()
@@ -40,6 +40,6 @@ func receiveMessage(server net.Conn) {
 		response := util.ParseMessage(message)
 		username := response.Header["Username"]
 		body := response.Body
-		log.Printf("【%s】%s\n", username, body)
+		log.Printf("【%s】\033[34m%s\033[0m\n", username, body)
 	}
 }

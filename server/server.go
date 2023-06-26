@@ -9,6 +9,7 @@ func Server() {
 	listener, _ := net.Listen("tcp", ":8080")
 	defer listener.Close()
 	clientList := []net.Conn{}
+	log.Println("Server is running...")
 	for {
 		client, _ := listener.Accept()
 		go clientConnect(client, &clientList)
@@ -32,7 +33,7 @@ func clientConnect(client net.Conn, clientList *[]net.Conn) {
 		// 将当前客户端的消息，广播给所有的客户端
 		for _, item := range *clientList {
 			if _, err := item.Write(message); err != nil {
-				log.Println(err.Error())
+				log.Println("发送失败：" + err.Error())
 			}
 		}
 	}
