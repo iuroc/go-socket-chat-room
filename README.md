@@ -1,6 +1,6 @@
 # Go Socket Chat Room
 
-> 通过 Go 语言基于 Socket 实现聊天室
+> 基于 Go 语言和 Socket 实现聊天室
 
 ## 项目信息
 
