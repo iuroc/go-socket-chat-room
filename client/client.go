@@ -8,38 +8,46 @@ import (
 	"sync"
 )
 
+// 启动客户端
 func Client() {
-	fmt.Print("请输入昵称：")
+	server, err := net.Dial("tcp", ":7758")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	var username string
+	fmt.Print("请输入昵称：")
 	fmt.Scanln(&username)
-	server, _ := net.Dial("tcp", ":8080")
 	var wg sync.WaitGroup
 	wg.Add(2)
-	go receiveMessage(server)
-	go sendMessage(server, username)
+	go sender(server, username)
+	go receiver(server)
 	wg.Wait()
 }
 
-func sendMessage(server net.Conn, username string) {
+// 消息发送线程
+func sender(server net.Conn, username string) {
 	for {
-		var body string
-		fmt.Scanln(&body)
+		var text string
+		fmt.Scanln(&text)
 		header := make(map[string]string)
 		header["Username"] = username
-		server.Write(util.MakeMessage(header, body))
+		message := util.MakeMessage(header, text)
+		if _, err := server.Write(message); err != nil {
+			log.Fatal(err.Error())
+		}
 	}
 }
 
-func receiveMessage(server net.Conn) {
+// 消息接收线程
+func receiver(server net.Conn) {
 	for {
 		message := make([]byte, 1024)
-		_, err := server.Read(message)
-		if err != nil {
-			break
+		if _, err := server.Read(message); err != nil {
+			log.Fatal(err.Error())
 		}
 		response := util.ParseMessage(message)
 		username := response.Header["Username"]
-		body := response.Body
-		log.Printf("【%s】\033[34m%s\033[0m\n", username, body)
+		text := response.Body
+		fmt.Printf("【%s】%s\n", username, text)
 	}
 }

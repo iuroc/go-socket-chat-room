@@ -5,35 +5,49 @@ import (
 	"net"
 )
 
+// 启动服务端
 func Server() {
-	listener, _ := net.Listen("tcp", ":8080")
-	defer listener.Close()
-	clientList := []net.Conn{}
-	log.Println("Server is running...")
+	// 创建服务端连接
+	listener, err := net.Listen("tcp", ":7758")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	log.Println("服务端正在运行")
+	// 创建客户端队列
+	clientList := make(map[int]net.Conn)
+	// 客户端 ID 累加生成器
+	var clientId int
+	// 循环监听客户端连接
 	for {
-		client, _ := listener.Accept()
-		go clientConnect(client, &clientList)
+		client, err := listener.Accept()
+		if err != nil {
+			log.Println(err.Error())
+		}
+		// 将客户端加入队列
+		clientList[clientId] = client
+		log.Printf("在线人数：%d\n", len(clientList))
+		// 开始为客户端提供服务
+		go handleClient(client, clientId, clientList)
+		clientId++
 	}
 }
 
-// 发现客户端连接
-func clientConnect(client net.Conn, clientList *[]net.Conn) {
-	// 当前客户端，在客户端列表中的索引
-	index := len(*clientList)
-	// 将当前客户端，加入到客户端列表中
-	*clientList = append(*clientList, client)
+// 处理客户端连接
+func handleClient(client net.Conn, clientId int, clientList map[int]net.Conn) {
 	for {
+		// 获取客户端消息内容
 		message := make([]byte, 1024)
-		// 获取当前客户端的请求消息数据
-		if _, err := client.Read(message); err != nil {
-			// 发生错误，从客户端列表中移除当前客户端
-			*clientList = append((*clientList)[:index], (*clientList)[index+1:]...)
-			break
+		_, err := client.Read(message)
+		// 判断客户端离线
+		if err != nil {
+			delete(clientList, clientId)
+			log.Printf("在线人数：%d\n", len(clientList))
+			return
 		}
-		// 将当前客户端的消息，广播给所有的客户端
-		for _, item := range *clientList {
+		// 广播转发消息
+		for _, item := range clientList {
 			if _, err := item.Write(message); err != nil {
-				log.Println("发送失败：" + err.Error())
+				log.Println(err.Error())
 			}
 		}
 	}
